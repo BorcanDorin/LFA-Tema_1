@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <string.h>
+#include <regex>
 
 using namespace std;
 
@@ -10,6 +10,13 @@ struct letter
 {
 	char* text;
 	letter* next;
+};
+
+struct link 
+{
+	int dictionaryId;
+	int node;
+	link *nextLink;
 };
 
 class Node 
@@ -22,10 +29,7 @@ public:
 		final_st = 2
 	} stare;
 
-	 struct link {
-		 int letter;
-		 int node;
-	 } *links;
+	 link *links;
 
 	Node(state st);
 	void set_state(state st);
@@ -33,7 +37,6 @@ public:
 
 Node::Node(state st = no_st) : stare(st) 
 {
-
 	links = NULL;
 }
 
@@ -58,6 +61,19 @@ int splitAndInitialize(char line[], char const splitter[], int nodeCount, Node *
 	return 0;
 }
 
+int getDictionaryId(letter* dictionary, char text[])
+{
+	int i = 0;
+	while(dictionary!=NULL)
+	{
+		if (!strcmp(dictionary->text, text))
+			return i;
+		i++;
+		dictionary = dictionary->next;
+	}
+	return -1;
+}
+
 void dictionaryAdd(letter* &dictionary, char* text)
 {
 	auto v = new letter();
@@ -74,9 +90,58 @@ void dictionaryAdd(letter* &dictionary, char* text)
 	letter *p = dictionary;
 	while (p->next != NULL)
 	{
+		if(!strcmp(p->text, text))
+			return; 
 		p = p->next;
 	}
 	p->next = v;
+}
+
+int addLink(link* &links, int node, int dictionryId, int node_count)
+{
+	auto n_link = new link;
+	n_link->node = node;
+	n_link->dictionaryId = dictionryId;
+	n_link->nextLink = NULL;
+	if (n_link->dictionaryId < 0)
+		return 2;
+	if (n_link->node >= node_count)
+		return 3;
+	if(links == NULL)
+	{
+		links = n_link;
+		return 0;
+	}
+
+	link* p = links;
+	while (p->nextLink != NULL)
+	{
+		if (p->node == n_link->node && p->dictionaryId == n_link->dictionaryId)
+			return 0;
+		p = p->nextLink;
+	}
+	p->nextLink = n_link;
+	return 0;
+}
+
+int createLinks(char line[],int node_count, Node* start, letter* dictionary, char const splitter[])
+{
+	char *next_val = NULL;
+	auto val = strtok_s(line, splitter, &next_val);
+	int i = 0;
+	char* data[3];
+
+	while (val != NULL)
+	{
+		data[i] = new char[sizeof(val)];
+		strcpy_s(data[i++], sizeof(val), val);
+		val = strtok_s(NULL, splitter, &next_val);
+	}
+	auto const node = atoi(data[0]);
+	if (node > node_count)
+		return 1;
+
+	return addLink(start[node - 1].links, atoi(data[1]) - 1, getDictionaryId(dictionary, data[2]), node_count);
 }
 
 int read(char const file_name[], int &node_count, Node* &start, letter* &dictionary, char const splitter[])
@@ -112,6 +177,14 @@ int read(char const file_name[], int &node_count, Node* &start, letter* &diction
 		}
 		if (dictionary == NULL)
 			throw 3;
+
+		while(f.good())
+		{
+			f.getline(line, sizeof(line));
+			const auto info = createLinks(line, node_count, start, dictionary, splitter);
+			if (info != 0)
+				throw info;
+		}
 	}
 	catch (int e)
 	{
@@ -120,17 +193,41 @@ int read(char const file_name[], int &node_count, Node* &start, letter* &diction
 	return 0;
 }
 
+bool check(char word[], Node* start, int current_node, letter* dictionary)
+{
+	if (strlen(word) == 0)
+		return start[current_node].stare == Node::final_st;
+	link* p = start[current_node].links;
+	while (p != NULL)
+	{
+		
+	}
+}
+
+bool checkWord(char word[], Node* start, letter* dictionary, int node_count)
+{
+	for (int i = 0; i < node_count; i++)
+	{
+		if (start[i].stare == Node::initial_st)
+			check(word, start, i, dictionary);
+	}
+	return true;
+}
+
 int main()
 {
 	char const file_name[] = "date.in";
-	char const splitter[] = " ,.'-*&^%$#@!~`|";
+	char const splitter[] = " ,.'-*&^%$#@!~`|<>?/\"[]{}+_()!=";
+	char const input_message[] = "Insert word to be tested:";
 
 	int node_count;
 	Node* start;				//list of nodes
 
 	letter *dictionary = NULL;			//list of letters
 	read(file_name, node_count, start, dictionary, splitter);
-	cout << "hello";
+	char word[500];
+	cout << input_message << endl;
+	cin >> word;
 
 	return 0;
 }
