@@ -195,23 +195,37 @@ int read(char const file_name[], int &node_count, Node* &start, letter* &diction
 
 bool check(char word[], Node* start, int current_node, letter* dictionary)
 {
-	if (strlen(word) == 0)
-		return start[current_node].stare == Node::final_st;
+	if (strlen(word) == 0 && start[current_node].stare == Node::final_st)
+		return true;
+	bool result = false;
 	link* p = start[current_node].links;
-	while (p != NULL)
-	{
-		
-	}
+	char *st_letter = new char[3];
+	st_letter[0] = word[0];
+	st_letter[1] = '\0';
+	auto dic_id = getDictionaryId(dictionary, st_letter);
+	if (dic_id >= 0)
+		while (p != NULL)
+		{
+			if(p->dictionaryId == dic_id)
+			{
+				char* n_word = new char[sizeof(char) * strlen(word)];
+				strcpy_s(n_word, sizeof(char) * strlen(word), word + 1);
+				result = result || check(n_word, start, p->node, dictionary);
+			}
+			p = p->nextLink;
+		}
+	return result;
 }
 
 bool checkWord(char word[], Node* start, letter* dictionary, int node_count)
 {
+	bool result = false;
 	for (int i = 0; i < node_count; i++)
 	{
 		if (start[i].stare == Node::initial_st)
-			check(word, start, i, dictionary);
+			result = result || check(word, start, i, dictionary);
 	}
-	return true;
+	return result;
 }
 
 int main()
@@ -228,6 +242,10 @@ int main()
 	char word[500];
 	cout << input_message << endl;
 	cin >> word;
+	if (checkWord(word, start, dictionary, node_count))
+		cout << "DA!";
+	else 
+		cout << "NU!";
 
 	return 0;
 }
