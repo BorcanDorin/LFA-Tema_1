@@ -185,6 +185,7 @@ int read(char const file_name[], int &node_count, Node* &start, letter* &diction
 			if (info != 0)
 				throw info;
 		}
+		f.close();
 	}
 	catch (int e)
 	{
